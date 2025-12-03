@@ -7,6 +7,7 @@ package impl;
 
 import cnx.ConexionMysql;
 import java.security.MessageDigest;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -23,16 +24,21 @@ import util.Seguridad;
  */
 public class ClienteImpl {
 
-   
     public boolean insertar(Cliente cliente) {
 
         Connection con = null;
-        PreparedStatement ps = null;
+        //PreparedStatement ps = null; ANTES
+
+        CallableStatement ps = null;
         try {
             con = ConexionMysql.getConnection();
-            String sql = "INSERT INTO cliente (id_tipo, dni, nombre, apellido, email, password, telefono, direccion, verificado) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-            ps = con.prepareStatement(sql);
+            //String sql = "INSERT INTO cliente (id_tipo, dni, nombre, apellido, email, password, telefono, direccion, verificado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"; ANTES
+
+            String sql = "{ CALL insertar_cliente(?, ?, ?, ?, ?, ?, ?, ?, ?) }";
+            //ps = con.prepareStatement(sql); ANTES
+            ps = con.prepareCall(sql);
+
+            
             ps.setInt(1, cliente.getIdTipo());
             ps.setString(2, cliente.getDni());
             ps.setString(3, cliente.getNombre());
@@ -56,7 +62,6 @@ public class ClienteImpl {
     }
 
 
-   
     public Cliente obtenerPorId(int idCliente) {
 
         Cliente cliente = null;
@@ -81,7 +86,6 @@ public class ClienteImpl {
         return cliente;
     }
 
-  
     public List<Cliente> listarTodos() {
 
         List<Cliente> lista = new ArrayList<>();
@@ -105,7 +109,6 @@ public class ClienteImpl {
         return lista;
     }
 
-  
     public boolean actualizar(Cliente cliente) {
         Connection con = null;
         PreparedStatement ps = null;
@@ -134,7 +137,6 @@ public class ClienteImpl {
         return false;
     }
 
-  
     public boolean eliminar(int idCliente) {
         Connection con = null;
         PreparedStatement ps = null;
@@ -153,7 +155,6 @@ public class ClienteImpl {
         return false;
     }
 
-    
     public Cliente obtenerPorEmail(String email) {
         Cliente cliente = null;
         Connection con = null;
@@ -178,70 +179,72 @@ public class ClienteImpl {
     }
 
     public Cliente login(String email, String password) {
-    Cliente cliente = null;
-    Connection con = null;
-    PreparedStatement ps = null;
-    ResultSet rs = null;
+        Cliente cliente = null;
+        Connection con = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
 
-    try {
-        con = ConexionMysql.getConnection();
+        try {
+            con = ConexionMysql.getConnection();
 
-        if (con == null) {
-            System.out.println("No se pudo establecer conexión con la base de datos.");
-            return null;
-        }
-
-        String sql = "SELECT * FROM cliente WHERE email = ? AND password = ? AND verificado = TRUE AND id_tipo = 2";
-        ps = con.prepareStatement(sql);
-
-        // 🔐 Encriptamos la contraseña ingresada antes de comparar
-       
-
-        ps.setString(1, email);
-        ps.setString(2, password);
-        rs = ps.executeQuery();
-
-        if (rs.next()) {
-            cliente = new Cliente();
-            cliente.setIdCliente(rs.getInt("id_cliente"));
-            cliente.setIdTipo(rs.getInt("id_tipo"));
-            cliente.setDni(rs.getString("dni"));
-            cliente.setNombre(rs.getString("nombre"));
-            cliente.setApellido(rs.getString("apellido"));
-            cliente.setEmail(rs.getString("email"));
-            cliente.setPassword(rs.getString("password"));
-            cliente.setTelefono(rs.getString("telefono"));
-            cliente.setDireccion(rs.getString("direccion"));
-            cliente.setVerificado(rs.getBoolean("verificado"));
-
-            Timestamp fechaRegistro = rs.getTimestamp("fecha_registro");
-            if (fechaRegistro != null) {
-                cliente.setFechaRegistro(fechaRegistro);
+            if (con == null) {
+                System.out.println("No se pudo establecer conexión con la base de datos.");
+                return null;
             }
 
-            System.out.println("Login exitoso: " + cliente.getNombre() + " " + cliente.getApellido());
-        } else {
-            System.out.println("Credenciales inválidas, usuario no verificado o tipo distinto a 2.");
+            String sql = "SELECT * FROM cliente WHERE email = ? AND password = ? AND verificado = TRUE AND id_tipo = 2";
+            ps = con.prepareStatement(sql);
+
+            // 🔐 Encriptamos la contraseña ingresada antes de comparar
+            ps.setString(1, email);
+            ps.setString(2, password);
+            rs = ps.executeQuery();
+
+            if (rs.next()) {
+                cliente = new Cliente();
+                cliente.setIdCliente(rs.getInt("id_cliente"));
+                cliente.setIdTipo(rs.getInt("id_tipo"));
+                cliente.setDni(rs.getString("dni"));
+                cliente.setNombre(rs.getString("nombre"));
+                cliente.setApellido(rs.getString("apellido"));
+                cliente.setEmail(rs.getString("email"));
+                cliente.setPassword(rs.getString("password"));
+                cliente.setTelefono(rs.getString("telefono"));
+                cliente.setDireccion(rs.getString("direccion"));
+                cliente.setVerificado(rs.getBoolean("verificado"));
+
+                Timestamp fechaRegistro = rs.getTimestamp("fecha_registro");
+                if (fechaRegistro != null) {
+                    cliente.setFechaRegistro(fechaRegistro);
+                }
+
+                System.out.println("Login exitoso: " + cliente.getNombre() + " " + cliente.getApellido());
+            } else {
+                System.out.println("Credenciales inválidas, usuario no verificado o tipo distinto a 2.");
+            }
+
+        } catch (Exception e) {
+            System.out.println("⚠️ Error en login(): " + e.getMessage());
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                if (ps != null) {
+                    ps.close();
+                }
+                if (con != null) {
+                    con.close();
+                }
+            } catch (Exception ex) {
+                System.out.println("⚠️ Error al cerrar recursos: " + ex.getMessage());
+            }
         }
 
-    } catch (Exception e) {
-        System.out.println("⚠️ Error en login(): " + e.getMessage());
-        e.printStackTrace();
-    } finally {
-        try {
-            if (rs != null) rs.close();
-            if (ps != null) ps.close();
-            if (con != null) con.close();
-        } catch (Exception ex) {
-            System.out.println("⚠️ Error al cerrar recursos: " + ex.getMessage());
-        }
+        return cliente;
     }
 
-    return cliente;
-}
-
-
- 
     public boolean verificarCuenta(int idCliente) {
         Connection con = null;
         PreparedStatement ps = null;
@@ -260,7 +263,6 @@ public class ClienteImpl {
         return false;
     }
 
-  
     public boolean actualizarVerificado(int idCliente, boolean estado) {
         Connection con = null;
         PreparedStatement ps = null;
@@ -279,7 +281,6 @@ public class ClienteImpl {
         }
         return false;
     }
-
 
     public boolean existeEmail(String email) {
         Connection con = null;
@@ -301,7 +302,6 @@ public class ClienteImpl {
         return false;
     }
 
- 
     public boolean existeDni(String dni) {
         Connection con = null;
         PreparedStatement ps = null;
