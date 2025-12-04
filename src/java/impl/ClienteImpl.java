@@ -27,26 +27,17 @@ public class ClienteImpl {
     public boolean insertar(Cliente cliente) {
 
         Connection con = null;
-        //PreparedStatement ps = null; ANTES
-
         CallableStatement ps = null;
         try {
             con = ConexionMysql.getConnection();
-            //String sql = "INSERT INTO cliente (id_tipo, dni, nombre, apellido, email, password, telefono, direccion, verificado) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"; ANTES
-
             String sql = "{ CALL insertar_cliente(?, ?, ?, ?, ?, ?, ?, ?, ?) }";
-            //ps = con.prepareStatement(sql); ANTES
             ps = con.prepareCall(sql);
-
-            
             ps.setInt(1, cliente.getIdTipo());
             ps.setString(2, cliente.getDni());
             ps.setString(3, cliente.getNombre());
             ps.setString(4, cliente.getApellido());
             ps.setString(5, cliente.getEmail());
-
             ps.setString(6, (cliente.getPassword()));
-
             ps.setString(7, cliente.getTelefono());
             ps.setString(8, cliente.getDireccion());
             ps.setBoolean(9, cliente.isVerificado());
@@ -58,20 +49,19 @@ public class ClienteImpl {
             cerrarRecursos(ps, con);
         }
         return false;
-
     }
-
 
     public Cliente obtenerPorId(int idCliente) {
 
         Cliente cliente = null;
         Connection con = null;
-        PreparedStatement ps = null;
+        CallableStatement ps = null;
         ResultSet rs = null;
         try {
+
             con = ConexionMysql.getConnection();
-            String sql = "SELECT * FROM cliente WHERE id_cliente = ?";
-            ps = con.prepareStatement(sql);
+            String sql = "{CALL sp_cliente_obtener_por_id(?)}";
+            ps = con.prepareCall(sql);
             ps.setInt(1, idCliente);
             rs = ps.executeQuery();
             if (rs.next()) {
@@ -90,12 +80,12 @@ public class ClienteImpl {
 
         List<Cliente> lista = new ArrayList<>();
         Connection con = null;
-        PreparedStatement ps = null;
+        CallableStatement ps = null;
         ResultSet rs = null;
         try {
             con = ConexionMysql.getConnection();
-            String sql = "SELECT * FROM cliente";
-            ps = con.prepareStatement(sql);
+            String sql = "{CALL sp_cliente_listar_todos()}";
+            ps = con.prepareCall(sql);
             rs = ps.executeQuery();
             while (rs.next()) {
                 lista.add(mapearCliente(rs));
@@ -111,46 +101,52 @@ public class ClienteImpl {
 
     public boolean actualizar(Cliente cliente) {
         Connection con = null;
-        PreparedStatement ps = null;
+        CallableStatement cs = null;
+
         try {
             con = ConexionMysql.getConnection();
-            String sql = "UPDATE cliente SET id_tipo=?, dni=?, nombre=?, apellido=?, email=?, password=?, telefono=?, direccion=?, verificado=? "
-                    + "WHERE id_cliente=?";
-            ps = con.prepareStatement(sql);
-            ps.setInt(1, cliente.getIdTipo());
-            ps.setString(2, cliente.getDni());
-            ps.setString(3, cliente.getNombre());
-            ps.setString(4, cliente.getApellido());
-            ps.setString(5, cliente.getEmail());
-            ps.setString(6, cliente.getPassword());
-            ps.setString(7, cliente.getTelefono());
-            ps.setString(8, cliente.getDireccion());
-            ps.setBoolean(9, cliente.isVerificado());
-            ps.setInt(10, cliente.getIdCliente());
-            return ps.executeUpdate() > 0;
+            String sql = "{ CALL actualizar_cliente(?, ?, ?, ?, ?, ?, ?, ?, ?, ?) }";
+            cs = con.prepareCall(sql);
+
+            cs.setInt(1, cliente.getIdTipo());
+            cs.setString(2, cliente.getDni());
+            cs.setString(3, cliente.getNombre());
+            cs.setString(4, cliente.getApellido());
+            cs.setString(5, cliente.getEmail());
+            cs.setString(6, cliente.getPassword());
+            cs.setString(7, cliente.getTelefono());
+            cs.setString(8, cliente.getDireccion());
+            cs.setBoolean(9, cliente.isVerificado());
+            cs.setInt(10, cliente.getIdCliente());
+
+            return cs.executeUpdate() > 0;
+
         } catch (Exception e) {
             System.out.println("⚠️ Error al actualizar cliente: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            cerrarRecursos(ps, con);
+            cerrarRecursos(cs, con);
         }
         return false;
     }
 
     public boolean eliminar(int idCliente) {
         Connection con = null;
-        PreparedStatement ps = null;
+        CallableStatement cs = null;
+
         try {
             con = ConexionMysql.getConnection();
-            String sql = "DELETE FROM cliente WHERE id_cliente = ?";
-            ps = con.prepareStatement(sql);
-            ps.setInt(1, idCliente);
-            return ps.executeUpdate() > 0;
+            String sql = "{ CALL eliminar_cliente(?) }";
+            cs = con.prepareCall(sql);
+            cs.setInt(1, idCliente);
+
+            return cs.executeUpdate() > 0;
+
         } catch (Exception e) {
             System.out.println("⚠️ Error al eliminar cliente: " + e.getMessage());
             e.printStackTrace();
         } finally {
-            cerrarRecursos(ps, con);
+            cerrarRecursos(cs, con);
         }
         return false;
     }
@@ -158,88 +154,57 @@ public class ClienteImpl {
     public Cliente obtenerPorEmail(String email) {
         Cliente cliente = null;
         Connection con = null;
-        PreparedStatement ps = null;
+        CallableStatement cs = null;
         ResultSet rs = null;
+
         try {
             con = ConexionMysql.getConnection();
-            String sql = "SELECT * FROM cliente WHERE email = ?";
-            ps = con.prepareStatement(sql);
-            ps.setString(1, email);
-            rs = ps.executeQuery();
+            String sql = "{ CALL obtener_cliente_por_email(?) }";
+            cs = con.prepareCall(sql);
+            cs.setString(1, email);
+
+            rs = cs.executeQuery();
+
             if (rs.next()) {
                 cliente = mapearCliente(rs);
             }
+
         } catch (Exception e) {
             System.out.println("⚠️ Error al obtener cliente por email: " + e.getMessage());
-            e.printStackTrace();
         } finally {
-            cerrarRecursos(rs, ps, con);
+            cerrarRecursos(rs, cs, con);
         }
+
         return cliente;
     }
 
     public Cliente login(String email, String password) {
         Cliente cliente = null;
         Connection con = null;
-        PreparedStatement ps = null;
+        CallableStatement cs = null;
         ResultSet rs = null;
 
         try {
             con = ConexionMysql.getConnection();
+            String sql = "{ CALL login_cliente(?, ?) }";
 
-            if (con == null) {
-                System.out.println("No se pudo establecer conexión con la base de datos.");
-                return null;
-            }
+            cs = con.prepareCall(sql);
+            cs.setString(1, email);
+            cs.setString(2, password);
 
-            String sql = "SELECT * FROM cliente WHERE email = ? AND password = ? AND verificado = TRUE AND id_tipo = 2";
-            ps = con.prepareStatement(sql);
-
-            // 🔐 Encriptamos la contraseña ingresada antes de comparar
-            ps.setString(1, email);
-            ps.setString(2, password);
-            rs = ps.executeQuery();
+            rs = cs.executeQuery();
 
             if (rs.next()) {
-                cliente = new Cliente();
-                cliente.setIdCliente(rs.getInt("id_cliente"));
-                cliente.setIdTipo(rs.getInt("id_tipo"));
-                cliente.setDni(rs.getString("dni"));
-                cliente.setNombre(rs.getString("nombre"));
-                cliente.setApellido(rs.getString("apellido"));
-                cliente.setEmail(rs.getString("email"));
-                cliente.setPassword(rs.getString("password"));
-                cliente.setTelefono(rs.getString("telefono"));
-                cliente.setDireccion(rs.getString("direccion"));
-                cliente.setVerificado(rs.getBoolean("verificado"));
-
-                Timestamp fechaRegistro = rs.getTimestamp("fecha_registro");
-                if (fechaRegistro != null) {
-                    cliente.setFechaRegistro(fechaRegistro);
-                }
-
+                cliente = mapearCliente(rs);
                 System.out.println("Login exitoso: " + cliente.getNombre() + " " + cliente.getApellido());
             } else {
-                System.out.println("Credenciales inválidas, usuario no verificado o tipo distinto a 2.");
+                System.out.println("Credenciales inválidas o usuario no verificado.");
             }
 
         } catch (Exception e) {
             System.out.println("⚠️ Error en login(): " + e.getMessage());
-            e.printStackTrace();
         } finally {
-            try {
-                if (rs != null) {
-                    rs.close();
-                }
-                if (ps != null) {
-                    ps.close();
-                }
-                if (con != null) {
-                    con.close();
-                }
-            } catch (Exception ex) {
-                System.out.println("⚠️ Error al cerrar recursos: " + ex.getMessage());
-            }
+            cerrarRecursos(rs, cs, con);
         }
 
         return cliente;
@@ -247,78 +212,88 @@ public class ClienteImpl {
 
     public boolean verificarCuenta(int idCliente) {
         Connection con = null;
-        PreparedStatement ps = null;
+        CallableStatement cs = null;
+
         try {
             con = ConexionMysql.getConnection();
-            String sql = "UPDATE cliente SET verificado = TRUE WHERE id_cliente = ?";
-            ps = con.prepareStatement(sql);
-            ps.setInt(1, idCliente);
-            return ps.executeUpdate() > 0;
+            String sql = "{ CALL verificar_cliente(?) }";
+            cs = con.prepareCall(sql);
+            cs.setInt(1, idCliente);
+
+            return cs.executeUpdate() > 0;
+
         } catch (Exception e) {
             System.out.println("⚠️ Error al verificar cuenta: " + e.getMessage());
-            e.printStackTrace();
         } finally {
-            cerrarRecursos(ps, con);
+            cerrarRecursos(cs, con);
         }
         return false;
     }
 
     public boolean actualizarVerificado(int idCliente, boolean estado) {
         Connection con = null;
-        PreparedStatement ps = null;
+        CallableStatement cs = null;
+
         try {
             con = ConexionMysql.getConnection();
-            String sql = "UPDATE cliente SET verificado = ? WHERE id_cliente = ?";
-            ps = con.prepareStatement(sql);
-            ps.setBoolean(1, estado);
-            ps.setInt(2, idCliente);
-            return ps.executeUpdate() > 0;
+            String sql = "{ CALL actualizar_verificado(?, ?) }";
+            cs = con.prepareCall(sql);
+
+            cs.setBoolean(1, estado);
+            cs.setInt(2, idCliente);
+
+            return cs.executeUpdate() > 0;
+
         } catch (Exception e) {
             System.out.println("⚠️ Error al actualizar verificación: " + e.getMessage());
-            e.printStackTrace();
         } finally {
-            cerrarRecursos(ps, con);
+            cerrarRecursos(cs, con);
         }
         return false;
     }
 
     public boolean existeEmail(String email) {
         Connection con = null;
-        PreparedStatement ps = null;
+        CallableStatement cs = null;
         ResultSet rs = null;
+
         try {
             con = ConexionMysql.getConnection();
-            String sql = "SELECT 1 FROM cliente WHERE email = ?";
-            ps = con.prepareStatement(sql);
-            ps.setString(1, email);
-            rs = ps.executeQuery();
+            String sql = "{ CALL existe_email(?) }";
+            cs = con.prepareCall(sql);
+            cs.setString(1, email);
+
+            rs = cs.executeQuery();
             return rs.next();
+
         } catch (Exception e) {
             System.out.println("⚠️ Error al verificar email: " + e.getMessage());
-            e.printStackTrace();
         } finally {
-            cerrarRecursos(rs, ps, con);
+            cerrarRecursos(rs, cs, con);
         }
         return false;
     }
 
     public boolean existeDni(String dni) {
         Connection con = null;
-        PreparedStatement ps = null;
+        CallableStatement cs = null;
         ResultSet rs = null;
+
         try {
             con = ConexionMysql.getConnection();
-            String sql = "SELECT 1 FROM cliente WHERE dni = ?";
-            ps = con.prepareStatement(sql);
-            ps.setString(1, dni);
-            rs = ps.executeQuery();
+            String sql = "{ CALL existe_dni(?) }";
+            cs = con.prepareCall(sql);
+            cs.setString(1, dni);
+
+            rs = cs.executeQuery();
             return rs.next();
+
         } catch (Exception e) {
             System.out.println("⚠️ Error al verificar DNI: " + e.getMessage());
-            e.printStackTrace();
         } finally {
-            cerrarRecursos(rs, ps, con);
+            cerrarRecursos(rs, cs, con);
         }
+
         return false;
     }
 

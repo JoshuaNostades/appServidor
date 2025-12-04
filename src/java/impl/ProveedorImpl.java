@@ -22,108 +22,142 @@ import java.util.List;
 public class ProveedorImpl{
 
 
-    public boolean insertar(Proveedor proveedor) {
-        String sql = "INSERT INTO proveedor (id_empleado, nombre_empresa, ruc, telefono, email, direccion, servicios_ofrecidos, calificacion, disponibilidad) "
-                   + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (Connection con = ConexionMysql.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+   public boolean insertar(Proveedor proveedor) {
+    String sql = "{CALL sp_proveedor_insertar(?,?,?,?,?,?,?,?,?)}";
 
-            ps.setInt(1, proveedor.getIdEmpleado());
-            ps.setString(2, proveedor.getNombreEmpresa());
-            ps.setString(3, proveedor.getRuc());
-            ps.setString(4, proveedor.getTelefono());
-            ps.setString(5, proveedor.getEmail());
-            ps.setString(6, proveedor.getDireccion());
-            ps.setString(7, proveedor.getServiciosOfrecidos());
-            ps.setDouble(8, proveedor.getCalificacion());
-            ps.setString(9, proveedor.getDisponibilidad());
+    try (Connection con = ConexionMysql.getConnection();
+         CallableStatement cs = con.prepareCall(sql)) {
 
-            return ps.executeUpdate() > 0;
+        cs.setInt(1, proveedor.getIdEmpleado());
+        cs.setString(2, proveedor.getNombreEmpresa());
+        cs.setString(3, proveedor.getRuc());
+        cs.setString(4, proveedor.getTelefono());
+        cs.setString(5, proveedor.getEmail());
+        cs.setString(6, proveedor.getDireccion());
+        cs.setString(7, proveedor.getServiciosOfrecidos());
+        cs.setDouble(8, proveedor.getCalificacion());
+        cs.setString(9, proveedor.getDisponibilidad());
 
-        } catch (SQLException e) {
-            System.out.println("⚠️ Error al insertar proveedor: " + e.getMessage());
-            return false;
-        }
+        return cs.executeUpdate() > 0;
+
+    } catch (SQLException e) {
+        System.out.println("⚠️ Error al insertar proveedor: " + e.getMessage());
+        return false;
     }
+}
+
 
  
-    public boolean actualizar(Proveedor proveedor) {
-        String sql = "UPDATE proveedor SET id_empleado=?, nombre_empresa=?, ruc=?, telefono=?, email=?, direccion=?, servicios_ofrecidos=?, calificacion=?, disponibilidad=? "
-                   + "WHERE id_proveedor=?";
-        try (Connection con = ConexionMysql.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+   public boolean actualizar(Proveedor proveedor) {
+    String sql = "{CALL sp_proveedor_actualizar(?,?,?,?,?,?,?,?,?,?)}";
 
-            ps.setInt(1, proveedor.getIdEmpleado());
-            ps.setString(2, proveedor.getNombreEmpresa());
-            ps.setString(3, proveedor.getRuc());
-            ps.setString(4, proveedor.getTelefono());
-            ps.setString(5, proveedor.getEmail());
-            ps.setString(6, proveedor.getDireccion());
-            ps.setString(7, proveedor.getServiciosOfrecidos());
-            ps.setDouble(8, proveedor.getCalificacion());
-            ps.setString(9, proveedor.getDisponibilidad());
-            ps.setInt(10, proveedor.getIdProveedor());
+    try (Connection con = ConexionMysql.getConnection();
+         CallableStatement cs = con.prepareCall(sql)) {
 
-            return ps.executeUpdate() > 0;
+        cs.setInt(1, proveedor.getIdEmpleado());
+        cs.setString(2, proveedor.getNombreEmpresa());
+        cs.setString(3, proveedor.getRuc());
+        cs.setString(4, proveedor.getTelefono());
+        cs.setString(5, proveedor.getEmail());
+        cs.setString(6, proveedor.getDireccion());
+        cs.setString(7, proveedor.getServiciosOfrecidos());
+        cs.setDouble(8, proveedor.getCalificacion());
+        cs.setString(9, proveedor.getDisponibilidad());
+        cs.setInt(10, proveedor.getIdProveedor());
 
-        } catch (SQLException e) {
-            System.out.println("⚠️ Error al actualizar proveedor: " + e.getMessage());
-            return false;
-        }
+        return cs.executeUpdate() > 0;
+
+    } catch (SQLException e) {
+        System.out.println("⚠️ Error al actualizar proveedor: " + e.getMessage());
+        return false;
     }
+}
+
 
   
     public boolean eliminar(int idProveedor) {
-        String sql = "DELETE FROM proveedor WHERE id_proveedor=?";
-        try (Connection con = ConexionMysql.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+    String sql = "{CALL sp_proveedor_eliminar(?)}";
 
-            ps.setInt(1, idProveedor);
-            return ps.executeUpdate() > 0;
+    try (Connection con = ConexionMysql.getConnection();
+         CallableStatement cs = con.prepareCall(sql)) {
 
-        } catch (SQLException e) {
-            System.out.println("⚠️ Error al eliminar proveedor: " + e.getMessage());
-            return false;
-        }
+        cs.setInt(1, idProveedor);
+        return cs.executeUpdate() > 0;
+
+    } catch (SQLException e) {
+        System.out.println("⚠️ Error al eliminar proveedor: " + e.getMessage());
+        return false;
     }
+}
 
-    public Proveedor obtenerPorId(int idProveedor) {
-        String sql = "SELECT * FROM proveedor WHERE id_proveedor=?";
-        Proveedor proveedor = null;
-        try (Connection con = ConexionMysql.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+   public Proveedor obtenerPorId(int idProveedor) {
+    String sql = "{CALL sp_proveedor_obtenerPorId(?)}";
+    Proveedor proveedor = null;
 
-            ps.setInt(1, idProveedor);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    proveedor = mapearProveedor(rs);
-                }
+    try (Connection con = ConexionMysql.getConnection();
+         CallableStatement cs = con.prepareCall(sql)) {
+
+        cs.setInt(1, idProveedor);
+        try (ResultSet rs = cs.executeQuery()) {
+            if (rs.next()) {
+                proveedor = mapearProveedor(rs);
             }
-
-        } catch (SQLException e) {
-            System.out.println("⚠️ Error al obtener proveedor por ID: " + e.getMessage());
         }
-        return proveedor;
+
+    } catch (SQLException e) {
+        System.out.println("⚠️ Error al obtener proveedor por ID: " + e.getMessage());
     }
+    return proveedor;
+}
+
 
   
-    public List<Proveedor> listarTodos() {
-        List<Proveedor> lista = new ArrayList<>();
-        String sql = "SELECT * FROM proveedor ORDER BY fecha_registro DESC";
-        try (Connection con = ConexionMysql.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+   public List<Proveedor> listarTodos() {
+    List<Proveedor> lista = new ArrayList<>();
+    String sql = "{CALL sp_proveedor_listarTodos()}";
 
-            while (rs.next()) {
-                lista.add(mapearProveedor(rs));
-            }
+    try (Connection con = ConexionMysql.getConnection();
+         CallableStatement cs = con.prepareCall(sql);
+         ResultSet rs = cs.executeQuery()) {
 
-        } catch (SQLException e) {
-            System.out.println("⚠️ Error al listar proveedores: " + e.getMessage());
+        while (rs.next()) {
+            lista.add(mapearProveedor(rs));
         }
-        return lista;
+
+    } catch (SQLException e) {
+        System.out.println("⚠️ Error al listar proveedores: " + e.getMessage());
     }
 
+    return lista;
+}
+
+
+    
+    
+     public Proveedor getNombreEmpresaById(int idProveedor) {
+    Proveedor proveedor = null;
+    String sql = "{CALL sp_proveedor_getNombreEmpresa(?)}";
+
+    try (Connection con = ConexionMysql.getConnection();
+         CallableStatement cs = con.prepareCall(sql)) {
+
+        cs.setInt(1, idProveedor);
+
+        try (ResultSet rs = cs.executeQuery()) {
+            if (rs.next()) {
+                proveedor = new Proveedor();
+                proveedor.setIdProveedor(idProveedor);
+                proveedor.setNombreEmpresa(rs.getString("nombre_empresa"));
+            }
+        }
+
+    } catch (SQLException e) {
+        e.printStackTrace();
+    }
+    return proveedor;
+}
+
+    
     // Método auxiliar para mapear un ResultSet a un objeto Proveedor
     private Proveedor mapearProveedor(ResultSet rs) throws SQLException {
         Proveedor p = new Proveedor();
@@ -140,30 +174,6 @@ public class ProveedorImpl{
         p.setFechaRegistro(rs.getTimestamp("fecha_registro"));
         return p;
     }
-    
-     public Proveedor getNombreEmpresaById(int idProveedor) {
-        Proveedor proveedor = null;
-        String sql = "SELECT nombre_empresa FROM proveedor WHERE id_proveedor = ?";
-
-        try (Connection con = ConexionMysql.getConnection();
-             PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setInt(1, idProveedor);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    proveedor = new Proveedor();
-                    proveedor.setIdProveedor(idProveedor);
-                    proveedor.setNombreEmpresa(rs.getString("nombre_empresa"));
-                }
-            }
-
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        return proveedor;
-    }
-    
-    
     
     
 }

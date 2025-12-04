@@ -6,6 +6,7 @@
 package impl;
 
 import cnx.ConexionMysql;
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -21,134 +22,141 @@ public class EventoImpl {
     
     
     Connection con;
-    PreparedStatement ps;
-    ResultSet rs;
+CallableStatement cs;
+ResultSet rs;
+
 
     // LISTAR
-    public List<Evento> listar() {
-        List<Evento> lista = new ArrayList<>();
-        String sql = "SELECT * FROM evento";
+   public List<Evento> listar() {
+    List<Evento> lista = new ArrayList<>();
 
-        try {
-            con = ConexionMysql.getConnection();
-            ps = con.prepareStatement(sql);
-            rs = ps.executeQuery();
+    try {
+        con = ConexionMysql.getConnection();
+        cs = con.prepareCall("{CALL sp_evento_listar()}");
+        rs = cs.executeQuery();
 
-            while (rs.next()) {
-                Evento e = new Evento();
-                e.setId_evento(rs.getInt("id_evento"));
-                e.setId_empleado(rs.getInt("id_empleado"));
-                e.setId_proveedor(rs.getInt("id_proveedor"));
-                e.setTitulo(rs.getString("titulo"));
-                e.setCategoria(rs.getString("categoria"));
-                e.setFecha_evento(rs.getString("fecha_evento"));
-                e.setLugar(rs.getString("lugar"));
-                e.setEstado(rs.getString("estado"));
-                e.setDescripcion(rs.getString("descripcion"));
-                e.setFecha_creacion(rs.getString("fecha_creacion"));
-                e.setImagen(rs.getString("imagen"));
-                lista.add(e);
-            }
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        while (rs.next()) {
+            Evento e = new Evento();
+            e.setId_evento(rs.getInt("id_evento"));
+            e.setId_empleado(rs.getInt("id_empleado"));
+            e.setId_proveedor(rs.getInt("id_proveedor"));
+            e.setTitulo(rs.getString("titulo"));
+            e.setCategoria(rs.getString("categoria"));
+            e.setFecha_evento(rs.getString("fecha_evento"));
+            e.setLugar(rs.getString("lugar"));
+            e.setEstado(rs.getString("estado"));
+            e.setDescripcion(rs.getString("descripcion"));
+            e.setFecha_creacion(rs.getString("fecha_creacion"));
+            e.setImagen(rs.getString("imagen"));
+            lista.add(e);
         }
-        return lista;
+
+    } catch (Exception ex) {
+        ex.printStackTrace();
     }
+
+    return lista;
+}
+
 
     // BUSCAR POR ID
-    public Evento buscar(int id) {
-        Evento e = null;
-        String sql = "SELECT * FROM evento WHERE id_evento=?";
+   public Evento buscar(int id) {
+    Evento e = null;
 
-        try {
-            con = ConexionMysql.getConnection();
-            ps = con.prepareStatement(sql);
-            ps.setInt(1, id);
-            rs = ps.executeQuery();
+    try {
+        con = ConexionMysql.getConnection();
+        cs = con.prepareCall("{CALL sp_evento_buscar(?)}");
+        cs.setInt(1, id);
+        rs = cs.executeQuery();
 
-            if (rs.next()) {
-                e = new Evento(
-                        rs.getInt("id_evento"),
-                        rs.getInt("id_empleado"),
-                        rs.getInt("id_proveedor"),
-                        rs.getString("titulo"),
-                        rs.getString("categoria"),
-                        rs.getString("fecha_evento"),
-                        rs.getString("lugar"),
-                        rs.getString("estado"),
-                        rs.getString("descripcion"),
-                        rs.getString("fecha_creacion"),
-                        rs.getString("imagen")
-                );
-            }
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
+        if (rs.next()) {
+            e = new Evento(
+                rs.getInt("id_evento"),
+                rs.getInt("id_empleado"),
+                rs.getInt("id_proveedor"),
+                rs.getString("titulo"),
+                rs.getString("categoria"),
+                rs.getString("fecha_evento"),
+                rs.getString("lugar"),
+                rs.getString("estado"),
+                rs.getString("descripcion"),
+                rs.getString("fecha_creacion"),
+                rs.getString("imagen")
+            );
         }
-        return e;
+
+    } catch (Exception ex) {
+        ex.printStackTrace();
     }
+
+    return e;
+}
+
 
     // AGREGAR
     public int agregar(Evento e) {
-        String sql = "INSERT INTO evento(id_empleado,id_proveedor,titulo,categoria,fecha_evento,lugar,estado,descripcion,imagen) VALUES (?,?,?,?,?,?,?,?,?)";
-        try {
-            con = ConexionMysql.getConnection();
-            ps = con.prepareStatement(sql);
-            ps.setInt(1, e.getId_empleado());
-            ps.setObject(2, e.getId_proveedor());
-            ps.setString(3, e.getTitulo());
-            ps.setString(4, e.getCategoria());
-            ps.setString(5, e.getFecha_evento());
-            ps.setString(6, e.getLugar());
-            ps.setString(7, e.getEstado());
-            ps.setString(8, e.getDescripcion());
-            ps.setString(9, e.getImagen());
-            return ps.executeUpdate();
+    try {
+        con = ConexionMysql.getConnection();
+        cs = con.prepareCall("{CALL sp_evento_agregar(?,?,?,?,?,?,?,?,?)}");
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return 0;
+        cs.setInt(1, e.getId_empleado());
+        cs.setObject(2, e.getId_proveedor());
+        cs.setString(3, e.getTitulo());
+        cs.setString(4, e.getCategoria());
+        cs.setString(5, e.getFecha_evento());
+        cs.setString(6, e.getLugar());
+        cs.setString(7, e.getEstado());
+        cs.setString(8, e.getDescripcion());
+        cs.setString(9, e.getImagen());
+
+        return cs.executeUpdate();
+
+    } catch (Exception ex) {
+        ex.printStackTrace();
     }
+    return 0;
+}
+
 
     // ACTUALIZAR
     public int actualizar(Evento e) {
-        String sql = "UPDATE evento SET id_empleado=?, id_proveedor=?, titulo=?, categoria=?, fecha_evento=?, lugar=?, estado=?, descripcion=?, imagen=? WHERE id_evento=?";
+    try {
+        con = ConexionMysql.getConnection();
+        cs = con.prepareCall("{CALL sp_evento_actualizar(?,?,?,?,?,?,?,?,?,?)}");
 
-        try {
-            con = ConexionMysql.getConnection();
-            ps = con.prepareStatement(sql);
-            ps.setInt(1, e.getId_empleado());
-            ps.setObject(2, e.getId_proveedor());
-            ps.setString(3, e.getTitulo());
-            ps.setString(4, e.getCategoria());
-            ps.setString(5, e.getFecha_evento());
-            ps.setString(6, e.getLugar());
-            ps.setString(7, e.getEstado());
-            ps.setString(8, e.getDescripcion());
-            ps.setString(9, e.getImagen());
-            ps.setInt(10, e.getId_evento());
-            return ps.executeUpdate();
+        cs.setInt(1, e.getId_empleado());
+        cs.setObject(2, e.getId_proveedor());
+        cs.setString(3, e.getTitulo());
+        cs.setString(4, e.getCategoria());
+        cs.setString(5, e.getFecha_evento());
+        cs.setString(6, e.getLugar());
+        cs.setString(7, e.getEstado());
+        cs.setString(8, e.getDescripcion());
+        cs.setString(9, e.getImagen());
+        cs.setInt(10, e.getId_evento());
 
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return 0;
+        return cs.executeUpdate();
+
+    } catch (Exception ex) {
+        ex.printStackTrace();
     }
+    return 0;
+}
+
 
     // ELIMINAR
     public int eliminar(int id) {
-        String sql = "DELETE FROM evento WHERE id_evento=?";
-        try {
-            con = ConexionMysql.getConnection();
-            ps = con.prepareStatement(sql);
-            ps.setInt(1, id);
-            return ps.executeUpdate();
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return 0;
+    try {
+        con = ConexionMysql.getConnection();
+        cs = con.prepareCall("{CALL sp_evento_eliminar(?)}");
+        cs.setInt(1, id);
+        return cs.executeUpdate();
+
+    } catch (Exception ex) {
+        ex.printStackTrace();
     }
+    return 0;
+}
+
     
 }
