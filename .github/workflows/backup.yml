@@ -1,0 +1,23 @@
+name: Backup Mensual
+
+on:
+  schedule:
+    - cron: "0 0 1 * *" # Cada 1 de mes, a las 00:00
+  workflow_dispatch: # Permite ejecutarlo manualmente
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar repo
+        uses: actions/checkout@v3
+
+      - name: Crear archivo ZIP
+        run: zip -r backup.zip .
+
+      - name: Subir ZIP al repositorio de backups
+        uses: actions/upload-artifact@v3
+        with:
+          name: backup-mensual
+          path: backup.zip
